@@ -1,0 +1,85 @@
+version: '3.5'
+
+services:
+  emqx1:
+    image: emqx/emqx:4.2.0
+    environment:
+      - "EMQX_NAME=emqx"
+      - "EMQX_HOST=emqx1.namlh.io"
+      - "EMQX_CLUSTER__DISCOVERY=static"
+      - "EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx1.namlh.io, emqx@emqx2.namlh.io, emqx@emqx3.namlh.io"
+      - "EMQX_ALLOW_ANONYMOUS=false"
+      - "EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=namlh"
+      - "EMQX_AUTH__USER__1__USERNAME=namlh"
+      - "EMQX_AUTH__USER__1__PASSWORD=namlh"
+      - "EMQX_LOADED_PLUGINS=emqx_auth_username"
+      - "EMQX_LISTENER__TCP__EXTERNAL__MAX_CONN_RATE=4096"
+    logging:
+      options:
+        max-size: "50m"
+    hostname: emqx1.namlh.io
+    networks:
+      namlh-emqx:
+        aliases:
+        - emqx1.namlh.io
+  emqx2:
+    image: emqx/emqx:4.2.0
+    environment:
+      - "EMQX_NAME=emqx"
+      - "EMQX_HOST=emqx2.namlh.io"
+      - "EMQX_CLUSTER__DISCOVERY=static"
+      - "EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx1.namlh.io, emqx@emqx2.namlh.io, emqx@emqx3.namlh.io"
+      - "EMQX_ALLOW_ANONYMOUS=false"
+      - "EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=namlh"
+      - "EMQX_AUTH__USER__1__USERNAME=namlh"
+      - "EMQX_AUTH__USER__1__PASSWORD=namlh"
+      - "EMQX_LOADED_PLUGINS=emqx_auth_username"
+      - "EMQX_LISTENER__TCP__EXTERNAL__MAX_CONN_RATE=4096"
+    logging:
+      options:
+        max-size: "50m"
+    hostname: emqx2.namlh.io
+    networks:
+      namlh-emqx:
+        aliases:
+        - emqx2.namlh.io
+  emqx3:
+    image: emqx/emqx:4.2.0
+    environment:
+      - "EMQX_NAME=emqx"
+      - "EMQX_HOST=emqx3.namlh.io"
+      - "EMQX_CLUSTER__DISCOVERY=static"
+      - "EMQX_CLUSTER__STATIC__SEEDS=emqx@emqx1.namlh.io, emqx@emqx2.namlh.io, emqx@emqx3.namlh.io"
+      - "EMQX_ALLOW_ANONYMOUS=false"
+      - "EMQX_DASHBOARD__DEFAULT_USER__PASSWORD=namlh"
+      - "EMQX_AUTH__USER__1__USERNAME=namlh"
+      - "EMQX_AUTH__USER__1__PASSWORD=namlh"
+      - "EMQX_LOADED_PLUGINS=emqx_auth_username"
+      - "EMQX_LISTENER__TCP__EXTERNAL__MAX_CONN_RATE=4096"
+    logging:
+      options:
+        max-size: "50m"
+    hostname: emqx3.namlh.io
+    networks:
+      namlh-emqx:
+        aliases:
+        - emqx3.namlh.io
+  haproxy:
+    image: haproxy:2.2.2-alpine
+    restart: always
+    ports:
+      - "1883:1883" # MQTT
+      - "8083:8083" # WS-MQTT
+      - "18083:18083" # EMQX dashboard
+      - "1936:1936"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+    networks:
+      namlh-emqx:
+        aliases:
+          - haproxy.namlh.io
+
+networks:
+  namlh-emqx:
+    external: true
+

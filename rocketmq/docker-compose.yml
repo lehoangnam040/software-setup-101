@@ -1,0 +1,62 @@
+version: '2'
+services:
+  #Service for nameserver
+  namesrv:
+    image: apache/rocketmq:4.9.0
+    container_name: rmqnamesrv
+    environment:
+      - JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m
+    ports:
+      - 9876:9876
+    #volumes:
+     # - ./data/namesrv/logs:/home/rocketmq/logs
+    command: sh mqnamesrv
+
+  #Service for broker
+  broker:
+    image: apache/rocketmq:4.9.0
+    container_name: rmqbroker
+    links:
+      - namesrv
+    ports:
+      #- 10909:10909
+      - 10911:10911
+   #   - 10912:10912
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m
+    volumes:
+     # - ./data/broker/logs:/home/rocketmq/logs
+      #- ./data/broker/store:/home/rocketmq/store
+      - ./conf/broker.conf:/opt/rocketmq-4.9.0/conf/broker.conf
+  #Service for another broker -- broker1
+  broker1:
+    image: apache/rocketmq:4.9.0
+    container_name: rmqbroker-b
+    links:
+      - namesrv
+    #ports:
+    
+# - 10929:10909
+      #- 9879:10911
+  #    - 10932:10912
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-Xms512M -Xmx512M -Xmn128m
+    volumes:
+     # - ./data1/broker/logs:/home/rocketmq/logs
+     # - ./data1/broker/store:/home/rocketmq/store
+      - ./conf/broker1.conf:/opt/rocketmq-4.9.0/conf/broker.conf
+    command: sh mqbroker -c /opt/rocketmq-4.9.0/conf/broker.conf
+
+  console:
+    image: styletang/rocketmq-console-ng:latest
+    container_name: console
+    links:
+      - namesrv
+    ports:
+      - 9877:8080
+    environment:
+        JAVA_OPTS: "-Xms512M -Xmx512M -Xmn128m -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false"
+    command: sh mqbroker -c /opt/rocketmq-4.9.0/conf/broker.conf
+
