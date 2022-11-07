@@ -1,0 +1,71 @@
+version: '3.7'
+
+services:
+  grafana:
+    image: grafana/grafana:9.2.3-ubuntu
+    ports:
+      - 3000:3000
+    volumes:
+      - /mnt/grafana-data:/var/lib/grafana
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.central_log==yes"
+    logging:
+      # https://docs.docker.com/config/containers/logging/local/
+      driver: "local"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "false"
+  loki:
+    image: grafana/loki:2.6.1
+    command: 
+      - "-config.file=/etc/loki/docker-config.yaml"
+    configs:
+      - source: loki_config
+        target: /etc/loki/docker-config.yaml
+    volumes:
+      - /mnt/loki-data:/loki
+    ports:
+      - 3100:3100
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.central_log==yes"
+    logging:
+      # https://docs.docker.com/config/containers/logging/local/
+      driver: "local"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "false"
+  promtail:
+    image: grafana/promtail:2.6.1
+    command: 
+      - "-config.file=/etc/promtail/docker-config.yaml"
+    depends_on:
+      - loki
+    # Need to override user so we can access the log files, and docker.sock
+    user: root
+    configs:
+      - source: promtail_config
+        target: /etc/promtail/docker-config.yaml
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/:ro
+    deploy:
+      mode: global
+    logging:
+      # https://docs.docker.com/config/containers/logging/local/
+      driver: "local"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "false"
+
+configs:
+  loki_config:
+    file: $PWD/config/loki.yaml
+  promtail_config:
+    file: $PWD/config/promtail.yaml
