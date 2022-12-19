@@ -12,12 +12,12 @@ services:
         constraints:
           - "node.labels.central_log==yes"
     logging:
-      # https://docs.docker.com/config/containers/logging/local/
-      driver: "local"
+      driver: "json-file"
       options:
         max-size: 20m
         max-file: 5
-        compress: "false"
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   loki:
     image: grafana/loki:2.6.1
     command: 
@@ -34,12 +34,12 @@ services:
         constraints:
           - "node.labels.central_log==yes"
     logging:
-      # https://docs.docker.com/config/containers/logging/local/
-      driver: "local"
+      driver: "json-file"
       options:
         max-size: 20m
         max-file: 5
-        compress: "false"
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   promtail:
     image: grafana/promtail:2.6.1
     command: 
@@ -57,12 +57,12 @@ services:
     deploy:
       mode: global
     logging:
-      # https://docs.docker.com/config/containers/logging/local/
-      driver: "local"
+      driver: "json-file"
       options:
         max-size: 20m
         max-file: 5
-        compress: "false"
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 configs:
   loki_config:

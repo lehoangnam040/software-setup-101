@@ -1,3 +1,4 @@
+# https://grafana.com/docs/loki/latest/configuration/
 auth_enabled: false
 
 server:
@@ -6,22 +7,41 @@ server:
 frontend:
   address: 0.0.0.0
 
-common:
-  path_prefix: /tmp/loki
-  storage:
-    filesystem:
-      chunks_directory: /tmp/loki/chunks
-      rules_directory: /tmp/loki/rules
-  replication_factor: 1
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: inmemory
+ingester:
+  # The ingester WAL (Write Ahead Log) records incoming logs and stores them on
+  # the local file systems in order to guarantee persistence of acknowledged data
+  # in the event of a process crash.
+  wal:
+    enabled: true
+    dir: /loki/wal
+    flush_on_shutdown: true
 
+  # Configures how the lifecycle of the ingester will operate
+  # and where it will register for discovery.
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      # Backend storage to use for the ring
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  # Any chunk not receiving new logs in this time will be flushed
+  chunk_idle_period: 1h
+  # When this threshold is exceeded the head block will be cut and compressed inside the chunk.
+  chunk_target_size: 8388608
+  # All chunks will be flushed when they hit this age
+  max_chunk_age: 1h
+  # Must be greater than index read cache TTL if using an index cache (Default index read cache TTL is 5m)
+  chunk_retain_period: 30s
+  # Chunk transfers disabled
+  max_transfer_retries: 0
+
+    
 schema_config:
   configs:
   - from: 2020-10-24
-    store: boltdb
+    store: boltdb-shipper
     object_store: filesystem
     schema: v11
     index:
@@ -29,28 +49,38 @@ schema_config:
       period: 24h
 
 storage_config:
-  boltdb:
-    directory: /loki/index
+  boltdb_shipper:
+    # Directory where ingesters would write boltdb files which would then be uploaded by shipper to configured storage
+    active_index_directory: /loki/boltdb-shipper-active
+    # Cache location for restoring boltDB files for queries
+    cache_location: /loki/boltdb-shipper-cache
+    # TTL for boltDB files restored in cache for queries
+    cache_ttl: 24h
+    # Shared store for keeping boltdb files
+    shared_store: filesystem
   filesystem:
     directory: /loki/chunks
 
+compactor:
+  # Directory where files can be downloaded for compaction.
+  working_directory: /loki/boltdb-shipper-compactor
+  # The shared store used for storing boltdb files.
+  shared_store: filesystem
+  # Interval at which to re-run the compaction operation (or retention if enabled).
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
 
-# ingester:
-#   lifecycler:
-#     address: 127.0.0.1
-#     ring:
-#       kvstore:
-#         store: inmemory
-#       replication_factor: 1
-#     final_sleep: 0s
-#   chunk_idle_period: 5m
-#   chunk_retain_period: 30s
+chunk_store_config:
+  max_look_back_period: 0s
 
-
-# limits_config:
-#   enforce_metric_name: false
-#   reject_old_samples: true
-#   reject_old_samples_max_age: 168h
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 12h
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+  retention_period: 744h # 31 days
 
 # By default, Loki will send anonymous, but uniquely-identifiable usage and configuration
 # analytics to Grafana Labs. These statistics are sent to https://stats.grafana.org/
@@ -64,3 +94,4 @@ storage_config:
 # If you would like to disable reporting, uncomment the following lines:
 analytics:
   reporting_enabled: false
+
