@@ -1,0 +1,8 @@
+route:
+  receiver: 'zulip'
+
+receivers:
+  # https://zulip.com/integrations/doc/alertmanager
+  - name: 'zulip'
+    webhook_configs:
+      - url: "https://zulip.com/api/v1/external/alertmanager?api_key=abcdefgh&stream=server-notifications&topic=prometheus&name=host&desc=alertname"

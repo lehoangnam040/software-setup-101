@@ -1,0 +1,47 @@
+version: '3.7'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.42.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - /mnt/prometheus-data:/prometheus
+      - $PWD/prometheus-config:/etc/prometheus
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.central_log==yes"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    configs:
+      - source: alertmanager_config
+        target: /etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
+    volumes:
+      - /mnt/alertmanager-data:/alertmanager
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.central_log==yes"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+configs:
+  alertmanager_config:
+    file: $PWD/alertmanager-config/alertmanager.yml
