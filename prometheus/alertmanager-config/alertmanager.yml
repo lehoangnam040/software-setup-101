@@ -1,8 +1,12 @@
 route:
+  group_wait: 1m
+  group_interval: 1m
+  repeat_interval: 1m
   receiver: 'zulip'
 
 receivers:
   # https://zulip.com/integrations/doc/alertmanager
   - name: 'zulip'
     webhook_configs:
-      - url: "https://zulip.com/api/v1/external/alertmanager?api_key=abcdefgh&stream=server-notifications&topic=prometheus&name=host&desc=alertname"
+      - url: "https://zulip.xyz.com/api/v1/external/alertmanager?api_key=abcdef&stream=server-notifications&topic=prometheus&name=summary&desc=description"
+        send_resolved: true

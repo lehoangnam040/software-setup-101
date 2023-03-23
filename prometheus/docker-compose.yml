@@ -3,6 +3,9 @@ version: '3.7'
 services:
   prometheus:
     image: prom/prometheus:v2.42.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.external-url=http://prometheus.xyz.com'
     ports:
       - "9090:9090"
     volumes:
