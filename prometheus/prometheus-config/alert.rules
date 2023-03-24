@@ -19,7 +19,7 @@ groups:
   rules:
 
   - alert: HostOutOfMemory
-    expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+    expr: (node_memory_MemAvailable_bytes * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_MemTotal_bytes * on(instance) group_left(node_id, node_name) node_meta) * 100 < 10
     for: 2m
     labels:
       group: node_exporter
@@ -28,7 +28,7 @@ groups:
       summary: Host out of memory (instance {{ $labels.instance }})
       description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostUnusualNetworkThroughputIn
-    expr: sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100
+    expr: sum by (node_name) (rate(node_network_receive_bytes_total[2m]) * on(instance) group_left(node_name) node_meta) / 1024 / 1024 > 100
     for: 5m
     labels:
       group: node_exporter
@@ -37,7 +37,7 @@ groups:
       summary: Host unusual network throughput in (instance {{ $labels.instance }})
       description: "Host network interfaces are probably receiving too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostOutOfDiskSpace
-    expr: (node_filesystem_avail_bytes{mountpoint="/"} * 100) / node_filesystem_size_bytes{mountpoint="/"} < 25
+    expr: (node_filesystem_avail_bytes{mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta * 100) / (node_filesystem_size_bytes{mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta) < 25
     for: 2m
     labels:
       group: node_exporter
@@ -46,7 +46,7 @@ groups:
       summary: Host out of disk space (instance {{ $labels.instance }})
       description: "Disk on root / is almost full (< 25% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostHighCpuLoad
-    expr: sum by (instance) (avg by (mode, instance) (rate(node_cpu_seconds_total{mode!="idle"}[2m]))) > 0.8
+    expr: sum by (node_name) (avg by (mode, node_name) (rate(node_cpu_seconds_total{mode!="idle"}[2m]) * on(instance) group_left(node_name) node_meta)) > 0.8
     for: 0m
     labels:
       group: node_exporter
@@ -56,7 +56,7 @@ groups:
       description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
   - alert: HostCpuIsUnderUtilized
-    expr: 100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * 100) < 20
+    expr: 100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * on(instance) group_left(node_id, node_name) node_meta * 100) < 20
     for: 1w
     labels:
       severity: info
@@ -64,7 +64,7 @@ groups:
       summary: Host CPU is under utilized (instance {{ $labels.instance }})
       description: "CPU load is < 20% for 1 week. Consider reducing the number of CPUs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostSwapIsFillingUp
-    expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80
+    expr: (1 - ((node_memory_SwapFree_bytes * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_SwapTotal_bytes * on(instance) group_left(node_id, node_name) node_meta))) * 100 > 80
     for: 2m
     labels:
       severity: warning
