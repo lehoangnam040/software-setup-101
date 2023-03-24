@@ -2,11 +2,26 @@ route:
   group_wait: 1m
   group_interval: 1m
   repeat_interval: 1m
-  receiver: 'zulip'
+  receiver: 'default'
+  routes:
+    - matchers:
+        - group = service_down
+      receiver: 'availability'
+    - matchers:
+        - group = node_exporter
+      receiver: 'hardware_alert'
 
 receivers:
   # https://zulip.com/integrations/doc/alertmanager
-  - name: 'zulip'
+  - name: 'default'
+    webhook_configs:
+      - url: "https://zulip.xyz.com/api/v1/external/alertmanager?api_key=abcdef&stream=server-notifications&topic=prometheus&name=summary&desc=description"
+        send_resolved: true
+  - name: 'availability'
+    webhook_configs:
+      - url: "https://zulip.xyz.com/api/v1/external/alertmanager?api_key=abcdef&stream=server-notifications&topic=prometheus&name=summary&desc=description"
+        send_resolved: true
+  - name: 'hardware_alert'
     webhook_configs:
       - url: "https://zulip.xyz.com/api/v1/external/alertmanager?api_key=abcdef&stream=server-notifications&topic=prometheus&name=summary&desc=description"
         send_resolved: true

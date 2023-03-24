@@ -3,6 +3,11 @@ version: '3.7'
 services:
   prometheus:
     image: prom/prometheus:v2.42.0
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+      - source: prometheus_alert_rules
+        target: /etc/prometheus/alert.rules
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.external-url=http://prometheus.xyz.com'
@@ -10,7 +15,6 @@ services:
       - "9090:9090"
     volumes:
       - /mnt/prometheus-data:/prometheus
-      - $PWD/prometheus-config:/etc/prometheus
     deploy:
       placement:
         constraints:
@@ -44,7 +48,45 @@ services:
         max-file: 5
         compress: "true"
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+  node-exporter:
+    image: prom/node-exporter:v1.5.0
+    volumes:
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /proc:/host/proc:ro
+      - /etc/hostname:/etc/nodename
+    configs:
+      - source: node_exporter_entrypoint 
+        target: /docker-entrypoint.sh
+    deploy:
+      mode: global
+    environment:
+      - NODE_ID={{.Node.ID}}
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.textfile.directory=/home/'
+      - '--collector.meminfo_numa'
+      - '--no-collector.ipvs'
+    entrypoint:
+       - /bin/sh
+       - /docker-entrypoint.sh 
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 configs:
+  prometheus_config:
+    file: $PWD/prometheus-config/prometheus.yml
+  prometheus_alert_rules:
+    file: $PWD/prometheus-config/alert.rules
   alertmanager_config:
     file: $PWD/alertmanager-config/alertmanager.yml
+  node_exporter_entrypoint:
+    file: $PWD/node-exporter-config/docker-entrypoint.sh
