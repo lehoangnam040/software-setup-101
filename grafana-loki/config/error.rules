@@ -1,0 +1,13 @@
+groups:
+  - name: error_log
+    rules:
+
+      - alert: ErrorLogs
+        expr: sum(count_over_time({job="containerlogs"}[10m] |~ "[eE]rror")) by (service_name) > 0
+        for: 10s
+        labels:
+          severity: critical
+          group: error_log
+        annotations:
+          summary: "Error logs on {{ $labels.service_name }}"
+          description: "LABEL {{ $labels }} value {{ $value }} ."

@@ -17,6 +17,7 @@ services:
         max-size: 20m
         max-file: 5
         compress: "true"
+        labels: "com.docker.swarm.node.id,com.docker.swarm.service.name"
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   loki:
     image: grafana/loki:2.6.1
@@ -25,6 +26,8 @@ services:
     configs:
       - source: loki_config
         target: /etc/loki/docker-config.yaml
+      - source: loki_error_rules_config
+        target: /etc/loki/rules/fake/error.rules
     volumes:
       - /mnt/loki-data:/loki
     ports:
@@ -39,6 +42,7 @@ services:
         max-size: 20m
         max-file: 5
         compress: "true"
+        labels: "com.docker.swarm.node.id,com.docker.swarm.service.name"
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   promtail:
     image: grafana/promtail:2.6.1
@@ -67,5 +71,7 @@ services:
 configs:
   loki_config:
     file: $PWD/config/loki.yaml
+  loki_error_rules_config:
+    file: $PWD/config/error.rules
   promtail_config:
     file: $PWD/config/promtail.yaml

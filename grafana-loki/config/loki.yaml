@@ -95,3 +95,16 @@ limits_config:
 analytics:
   reporting_enabled: false
 
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /etc/loki/rules
+  # File path to store temporary rule files.
+  rule_path: /tmp/loki/rules-temp
+  alertmanager_url: http://172.17.0.1:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+  enable_alertmanager_v2: true

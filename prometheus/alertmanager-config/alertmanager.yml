@@ -10,6 +10,9 @@ route:
     - matchers:
         - group = node_exporter
       receiver: 'hardware_alert'
+    - matchers:
+        - group = error_log
+      receiver: 'default'
 
 receivers:
   # https://zulip.com/integrations/doc/alertmanager

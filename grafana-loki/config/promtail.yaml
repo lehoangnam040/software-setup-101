@@ -29,11 +29,9 @@ scrape_configs:
           expressions:
             output: log
             stream: stream
-            attrs:
-      - json:
-          expressions:
-            tag:
-          source: attrs
+            node_id: attrs."com.docker.swarm.node.id"
+            service_name: attrs."com.docker.swarm.service.name"
+            tag: attrs.tag
       - regex:
           expression: (?P<image_name>(?:[^|]*[^|])).(?P<container_name>(?:[^|]*[^|])).(?P<image_id>(?:[^|]*[^|])).(?P<container_id>(?:[^|]*[^|]))
           source: tag
@@ -41,12 +39,13 @@ scrape_configs:
           format: RFC3339Nano
           source: time
       - labels:
-          tag:
           stream:
           image_name:
           container_name:
           image_id:
           container_id:
+          node_id:
+          service_name:
       - output:
           source: output
 
