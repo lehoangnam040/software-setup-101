@@ -80,6 +80,48 @@ services:
         max-file: 5
         compress: "true"
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.39.3
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    command:
+      - --docker_only
+      - --housekeeping_interval=5s
+      - --disable_metrics=disk,diskIO,tcp,udp,percpu,sched,process
+    deploy:
+      mode: global
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "true"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.1.8-3.1.5-ubuntu20.04
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - "node.labels.kind==gpu-worker-local"
+    command:
+      - '--'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 20m
+        max-file: 5
+        compress: "true"
+        labels: "com.docker.swarm.node.id,com.docker.swarm.service.name"
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 configs:
   prometheus_config:

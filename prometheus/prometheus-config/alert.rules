@@ -1,25 +1,42 @@
-
-
 groups:
 - name: availability
   rules:
 
-  - alert: service_down
-    expr: up == 0
-    for: 1m
+  - alert: MachineRebooted
+    expr: (time() - node_boot_time_seconds{job="swarm-nodes-metrics"} * on(instance) group_left(node_id, node_name) node_meta) / 3600 < 2
+    for: 0m
     labels:
       severity: critical
       group: availability
     annotations:
-      summary: "Instance {{ $labels.instance }} down"
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+      summary: Machine rebooted (instance {{ $labels.instance }})
+      description: "The machine {{ $labels.node_name }} rebooted within 2 hours ago (rebooted {{ $value }} hours ago)"
+#  - alert: ContainerKilled
+#    expr: time() - container_last_seen{job="cadvisor",container_label_com_docker_swarm_node_id=~"..*",container_label_com_docker_swarm_service_name=~"..*"} > 60
+#    for: 0m
+#    labels:
+#      severity: warning
+#      group: availability
+#    annotations:
+#      summary: Container killed (instance {{ $labels.instance }})
+#      description: "A container {{ $labels.container_label_com_docker_swarm_service_name }} ON {{ $labels.container_label_com_docker_swarm_node_id }} has disappeared, last seen {{ $value }} seconds ago"
+  - alert: ContainerAbsent
+    expr: absent(container_last_seen{job="cadvisor",container_label_com_docker_swarm_node_id=~"..*",container_label_com_docker_swarm_service_name=~"..*"})
+    for: 5m
+    labels:
+      severity: warning
+      group: availability
+    annotations:
+      summary: Container absent (instance {{ $labels.instance }})
+      description: "A container {{ $labels.container_label_com_docker_swarm_service_name }} ON {{ $labels.container_label_com_docker_swarm_node_id }} is absent for 5 min. VALUE = {{ $value }}"
+   
 
 # https://awesome-prometheus-alerts.grep.to/rules.html#host-and-hardware
 - name: node_exporter
   rules:
 
   - alert: HostOutOfMemory
-    expr: (node_memory_MemAvailable_bytes * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_MemTotal_bytes * on(instance) group_left(node_id, node_name) node_meta) * 100 < 10
+    expr: (node_memory_MemAvailable_bytes{job="swarm-nodes-metrics"} * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_MemTotal_bytes{job="swarm-nodes-metrics"} * on(instance) group_left(node_id, node_name) node_meta) * 100 < 10
     for: 2m
     labels:
       group: node_exporter
@@ -28,7 +45,7 @@ groups:
       summary: Host out of memory (instance {{ $labels.instance }})
       description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostUnusualNetworkThroughputIn
-    expr: sum by (node_name) (rate(node_network_receive_bytes_total[2m]) * on(instance) group_left(node_name) node_meta) / 1024 / 1024 > 100
+    expr: sum by (node_name) (rate(node_network_receive_bytes_total{job="swarm-nodes-metrics"}[2m]) * on(instance) group_left(node_name) node_meta) / 1024 / 1024 > 100
     for: 5m
     labels:
       group: node_exporter
@@ -37,7 +54,7 @@ groups:
       summary: Host unusual network throughput in (instance {{ $labels.instance }})
       description: "Host network interfaces are probably receiving too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostOutOfDiskSpace
-    expr: (node_filesystem_avail_bytes{mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta * 100) / (node_filesystem_size_bytes{mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta) < 25
+    expr: (node_filesystem_avail_bytes{job="swarm-nodes-metrics",mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta * 100) / (node_filesystem_size_bytes{job="swarm-nodes-metrics",mountpoint="/"} * on(instance) group_left(node_id, node_name) node_meta) < 25
     for: 2m
     labels:
       group: node_exporter
@@ -46,7 +63,7 @@ groups:
       summary: Host out of disk space (instance {{ $labels.instance }})
       description: "Disk on root / is almost full (< 25% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostHighCpuLoad
-    expr: sum by (node_name) (avg by (mode, node_name) (rate(node_cpu_seconds_total{mode!="idle"}[2m]) * on(instance) group_left(node_name) node_meta)) > 0.8
+    expr: sum by (node_name) (avg by (mode, node_name) (rate(node_cpu_seconds_total{job="swarm-nodes-metrics",mode!="idle"}[2m]) * on(instance) group_left(node_name) node_meta)) > 0.8
     for: 0m
     labels:
       group: node_exporter
@@ -54,20 +71,63 @@ groups:
     annotations:
       summary: Host high CPU load (instance {{ $labels.instance }})
       description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-  # You may want to increase the alert manager 'repeat_interval' for this type of alert to daily or weekly
-  - alert: HostCpuIsUnderUtilized
-    expr: 100 - (rate(node_cpu_seconds_total{mode="idle"}[30m]) * on(instance) group_left(node_id, node_name) node_meta * 100) < 20
-    for: 1w
-    labels:
-      severity: info
-    annotations:
-      summary: Host CPU is under utilized (instance {{ $labels.instance }})
-      description: "CPU load is < 20% for 1 week. Consider reducing the number of CPUs.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
   - alert: HostSwapIsFillingUp
-    expr: (1 - ((node_memory_SwapFree_bytes * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_SwapTotal_bytes * on(instance) group_left(node_id, node_name) node_meta))) * 100 > 80
+    expr: (1 - ((node_memory_SwapFree_bytes{job="swarm-nodes-metrics"} * on(instance) group_left(node_id, node_name) node_meta) / (node_memory_SwapTotal_bytes{job="swarm-nodes-metrics"} * on(instance) group_left(node_id, node_name) node_meta))) * 100 > 80
     for: 2m
     labels:
+      group: node_exporter
       severity: warning
     annotations:
       summary: Host swap is filling up (instance {{ $labels.instance }})
       description: "Swap is filling up (>80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+# https://github.com/grpc-ecosystem/go-grpc-prometheus/tree/master
+- name: grpc_rules
+  rules:
+
+  - alert: 99tileLatencyOfUnaryRequest
+    expr: histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{job="train-server-metrics",grpc_type="UNARY"}[5m])) by (grpc_method, grpc_service, le)) > 1
+    for: 0m
+    labels:
+      group: grpc_monitor
+      severity: warning
+    annotations:
+      summary: Slow unary response latency
+      description: "Method {{ $labels.grpc_method }} of {{ $labels.grpc_service }} have 99%-tile latency={{ $value }} > 1 second"
+  - alert: SlowUnaryRequestGreaterthan250ms
+    expr: 100.0 - (sum(rate(grpc_server_handling_seconds_bucket{job="train-server-metrics",grpc_type="UNARY",le="1.0"}[5m])) by (grpc_service, grpc_method) / sum(rate(grpc_server_handling_seconds_count{job="train-server-metrics",grpc_type="UNARY"}[5m])) by (grpc_service, grpc_method)) * 100.0 > 50
+    for: 0m
+    labels:
+      group: grpc_monitor
+      severity: warning
+    annotations:
+      summary: Slow unary request
+      description: "Method {{ $labels.grpc_method }} of {{ $labels.grpc_service }} have {{ $value }} % of requests > 1s"
+  - alert: HighRequestInboundRate
+    expr: sum(rate(grpc_server_started_total{job="train-server-metrics"}[1m])) by (grpc_service, grpc_method) > 10
+    for: 0m
+    labels:
+      group: grpc_monitor
+      severity: warning
+    annotations:
+      summary: High request inbound rate
+      description: "Method {{ $labels.grpc_method }} of {{ $labels.grpc_service }} have high per-second request rate = {{ $value }} in the last 1 minute"
+  - alert: AvgResponseStreamLow
+    expr: sum(rate(grpc_server_msg_sent_total{job="train-server-metrics",grpc_type="SERVER_STREAMING"}[10m])) by (grpc_service, grpc_method) / sum(rate(grpc_server_started_total{job="train-server-metrics",grpc_type="SERVER_STREAMING"}[10m])) by (grpc_service, grpc_method) < 10
+    for: 0m
+    labels:
+      group: grpc_monitor
+      severity: warning
+    annotations:
+      summary: Avg Response stream too low
+      description: "Method {{ $labels.grpc_method }} of {{ $labels.grpc_service }} have low avg response stream rate (response stream / unary request) = {{ $value }} (< 10) in past 10 min"
+  - alert: UnaryRequestErrorPercentage
+    expr: sum(rate(grpc_server_handled_total{job="train-server-metrics",grpc_type="UNARY",grpc_code="OK"}[1m])) by (grpc_service, grpc_method) / sum(rate(grpc_server_started_total{job="train-server-metrics",grpc_type="UNARY"}[1m])) by (grpc_service, grpc_method) * 100.0 > 10
+    for: 0m
+    labels:
+      group: grpc_monitor
+      severity: warning
+    annotations:
+      summary: High unary request error
+      description: "Method {{ $labels.grpc_method }} of {{ $labels.grpc_service }} have high unary request error percentage ({{ $value }} > 10%) in last 1 min"
+
