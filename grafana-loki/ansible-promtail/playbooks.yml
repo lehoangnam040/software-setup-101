@@ -1,0 +1,58 @@
+---
+- name: Install and configuration
+  hosts: '{{ target }}'
+  tasks:
+    - name: Install required basic software
+      apt:
+        name:
+          - unzip
+        state: latest
+
+    - name: Ensure /usr/local/bin exists
+      file:
+        path: /usr/local/bin
+        state: directory
+        mode: 0755
+
+    - name: Download promtail binary
+      get_url:
+        url: https://github.com/grafana/loki/releases/download/v2.8.3/promtail-linux-amd64.zip
+        dest: /root/promtail-linux-amd64.zip
+        force: false
+
+    - name: Unzip to promtail binary
+      unarchive:
+        src: /root/promtail-linux-amd64.zip
+        dest: /usr/local/bin
+        creates: /usr/local/bin/promtail-linux-amd64
+        mode: 0755
+        remote_src: true
+    
+    - name: Write promtail config
+      template:
+        src: promtail-config.yml.j2
+        dest: "/usr/local/bin/promtail-config.yml"
+        force: true
+
+    - name: Create mount folder for promtail
+      file:
+        path: /mnt/promtail
+        state: directory
+        recurse: true
+        owner: root 
+
+- name: Run promtail as a service
+  hosts: '{{ target }}'
+  tasks:
+    - name: Write promtail systemd service
+      template:
+        src: promtail.service.j2
+        dest: "/etc/systemd/system/promtail.service"
+        force: true
+    
+    - name: Run systemd service
+      systemd:
+        daemon_reload: true
+        name: promtail
+        state: started
+        enabled: true
