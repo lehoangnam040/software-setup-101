@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:7.0.12-alpine3.18
+    container_name: superset_cache
+    restart: unless-stopped
+    volumes:
+      - ./redis:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 10m
+        max-file: 5
+        compress: "true"
+
+  superset:
+    image: apache/superset:2.1.0
+    env_file: docker/.env
+    container_name: superset
+    command: ["/app/docker/docker-bootstrap.sh"]
+    user: "root"
+    restart: unless-stopped
+    ports:
+      - 8088:8088
+    volumes:
+      - ./docker:/app/docker
+      - ./superset_home:/app/superset_home
+    depends_on:
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: 10m
+        max-file: 5
+        compress: "true"
