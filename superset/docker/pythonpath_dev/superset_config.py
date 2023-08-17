@@ -32,7 +32,7 @@ AUTH_USER_REGISTRATION_ROLE = "Admin"
 OAUTH_PROVIDERS = [
     {
         'name': 'google',
-        'whitelist': ["@eurekarobotics.com"],
+        'whitelist': ["@namlh.com"],
         'icon': 'fa-google',
         'token_key': 'access_token',
         'remote_app': {
@@ -49,7 +49,7 @@ OAUTH_PROVIDERS = [
         }
     }
 ]
-WEBDRIVER_BASEURL = "http://registry.eurekarobotics.com:8088/"
+WEBDRIVER_BASEURL = "http://superset.namlh.com/"
 # The base URL for the email report hyperlinks.
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
 SQLLAB_CTAS_NO_LIMIT = True
