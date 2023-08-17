@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  # https://hub.docker.com/r/sonatype/nexus3
+  # https://help.sonatype.com/repomanager3/product-information/sonatype-nexus-repository-system-requirements#SonatypeNexusRepositorySystemRequirements-Docker
+  nexus3:
+    image: sonatype/nexus3:3.59.0
+    container_name: nexus3
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    volumes:
+      - /root/nexus3/nexus-data:/nexus-data 
+    stop_grace_period: 120s
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65536
+        hard: 65536
