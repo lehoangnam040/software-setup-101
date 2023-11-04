@@ -37,6 +37,13 @@ scrape_configs:
       type: 'A'
       port: 9400
 
+  - job_name: 'db-pg-metrics'
+    dns_sd_configs:
+    - names:
+      - 'tasks.postgres-exporter'
+      type: 'A'
+      port: 9187
+
   - job_name: "server"
     metrics_path: /
     scheme: http

@@ -122,6 +122,14 @@ services:
         compress: "true"
         labels: "com.docker.swarm.node.id,com.docker.swarm.service.name"
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      - DATA_SOURCE_URI=localhost:5432/postgres?sslmode=require
+      - DATA_SOURCE_USER=postgres_exporter
+      - DATA_SOURCE_PASS=postgres_pass
+      - PG_EXPORTER_WEB_TELEMETRY_PATH=/metrics
+      - PG_EXPORTER_DISABLE_SETTINGS_METRICS=true
 
 configs:
   prometheus_config:
