@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.67
+    container_name: seaweedfs
+    ports:
+      - "8333:8333"
+    command: server -s3 -dir="/mnt/data" -s3.config=/etc/seaweedfs/s3.conf -ip.bind=0.0.0.0
+    volumes:
+      - ./data:/mnt/data
+      - ./seaweedfs:/etc/seaweedfs
