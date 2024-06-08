@@ -5,8 +5,12 @@ services:
     image: chrislusf/seaweedfs:3.67
     container_name: seaweedfs
     ports:
-      - "8333:8333"
-    command: server -s3 -dir="/mnt/data" -s3.config=/etc/seaweedfs/s3.conf -ip.bind=0.0.0.0
+      - "9000:9000"
+    command: |
+        server -s3 -dir="/mnt/data" -s3.config=/etc/s3/s3.conf -s3.port 9000
+        -ip.bind=0.0.0.0 -master.volumePreallocate 
+        -volume.fileSizeLimitMB 4096 -volume.index leveldb -volume.index.leveldbTimeout 1 
+        -filer.exposeDirectoryData false
     volumes:
       - ./data:/mnt/data
       - ./seaweedfs:/etc/seaweedfs
