@@ -356,8 +356,14 @@ RUN echo "**** filesystem setup ****" && \
     echo "**** xfce tweaks ****" && \
       rm -f /etc/xdg/autostart/xscreensaver.desktop
 
-ENV TERM="xterm"
-ENV DISPLAY=:1
+ENV TERM="xterm" \
+    DISPLAY=:1 \
+    PERL5LIB=/usr/local/bin \
+    OMP_WAIT_POLICY=PASSIVE \
+    NVIDIA_DRIVER_CAPABILITIES=all \
+    TITLE="Ubuntu XFCE" \
+    LANGUAGE="en_US.UTF-8" \
+    LANG="en_US.UTF-8"
 
 COPY /root /
 
