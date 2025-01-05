@@ -1,0 +1,16 @@
+services:
+  eccloud:
+    image: ubuntu:amd64-jammy-xfce-kasmvnc
+    container_name: myubuntu
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    runtime: sysbox-runc
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    ports:
+      - 3000:3000
